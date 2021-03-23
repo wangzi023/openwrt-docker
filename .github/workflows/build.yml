@@ -8,9 +8,9 @@ on:
       - ".github/workflows/build.yml"
 
 env:
-  FIRMWARE_URL: "https://downloads.openwrt.org/releases/19.07.2/targets/x86/64/openwrt-19.07.2-x86-64-generic-rootfs.tar.gz"
-  REPOSITORY: crazygit/openwrt-x86-64
-  TAG: 19.07.2
+  FIRMWARE_URL: "https://github.com/huangqian8/Cloud-N1-OpenWrt/releases/download/20210321/openwrt-armvirt-64-default-rootfs.tar.gz"
+  REPOSITORY: lhy0315cn/n1openwrt55o
+  TAG: 21.03.23
 
 jobs:
   build:
