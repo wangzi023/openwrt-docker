@@ -8,7 +8,7 @@ on:
       - ".github/workflows/build.yml"
 
 env:
-  FIRMWARE_URL: "https://github.com/lhy0315cn/build-openwrt/releases/download/N1/openwrt-armvirt-64-default-rootfs.tar.gz"
+  FIRMWARE_URL: "https://github.com/lhy0315cn/build-openwrt/releases/download/n1/openwrt-armvirt-64-default-rootfs.tar.gz"
   REPOSITORY: lhy0315cn/n1-box
   TAG: 21.04.27
 
