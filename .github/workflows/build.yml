@@ -1,0 +1,36 @@
+name: Build OpenWrt Docker x86-64 image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/build.yml"
+
+env:
+  FIRMWARE_URL: "https://github.com/huangqian8/Cloud-N1-OpenWrt/releases/download/20220605/openwrt-armvirt-64-default-rootfs.tar.gz"
+  REPOSITORY: lhy0315cn/n1-box
+  TAG: 22.06.05
+
+jobs:
+  build:
+    name: "Build OpenWrt docker image"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Download Firmware
+        run: |
+          wget $FIRMWARE_URL -O openwrt.tar.gz
+
+      - name: Publish to Registry
+        uses: elgohr/Publish-Docker-Github-Action@master
+        env:
+          FIRMWARE: openwrt.tar.gz
+        with:
+          name: ${{ env.REPOSITORY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+          buildargs: FIRMWARE
+          tags: "latest,${{ env.TAG }}"
