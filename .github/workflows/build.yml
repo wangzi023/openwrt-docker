@@ -1,36 +1,52 @@
-name: Build OpenWrt Docker x86-64 image
+name: Build and Push OpenWrt ARM64 Docker Image
 
 on:
   push:
-    branches:
-      - master
-    paths:
-      - ".github/workflows/build.yml"
-
-env:
-  FIRMWARE_URL: "https://public.bl.files.1drv.com/y4m2GyRvlRlLcyf051Z9UABYY4gdFG6jWNdOC4C9m2CBU5_S0gD02N_gaibmerrVqAoQdhd_L7feiTLKwttdX49Dt_03qWTxZnUz0SMHD9VnF27px-esT3LsPbOGWGZHYN8u0nx1_o0bTSvKzA1VGZ1WoeTLpS9IVLESdL4PpWcM56UkhYQ-cTVXp6dk5RH7-uyV46ZFQ7zgXAvd1sqP4Bo76BrTDSACBWkBbboxlbZisY?AVOverride=1"
-  REPOSITORY: lhy0315cn/onecloud
-  TAG: 23.08.26
+    tags:
+      - 'v*' # 推送 v 开头的标签时触发构建
+  workflow_dispatch: # 允许手动触发工作流
 
 jobs:
   build:
-    name: "Build OpenWrt docker image"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # 注意：如需原生ARM环境构建，可选用GitHub提供的ARM runner（如ubuntu-24.04-arm）以获得更好性能和兼容性。
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@master
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Download Firmware
+      - name: Download OpenWrt 24.10.1 ARM64 rootfs
         run: |
-          wget $FIRMWARE_URL -O openwrt.tar.gz
+          wget -O rootfs.tar.gz https://archive.openwrt.org/releases/24.10.1/targets/armsr/armv8/openwrt-24.10.1-armsr-armv8-generic-ext4-rootfs.img.gz
+          # 验证文件完整性，例如检查SHA256（如果官网提供）
+          # ... 可添加验证命令 ...
 
-      - name: Publish to Registry
-        uses: elgohr/Publish-Docker-Github-Action@master
-        env:
-          FIRMWARE: openwrt.tar.gz
+      - name: Extract and prepare rootfs
+        run: |
+          mkdir -p rootfs
+          tar -xzf rootfs.tar.gz -C rootfs
+          # 如果需要，可以在此处添加自定义脚本或文件到 rootfs/
+          # 例如，拷贝一个自定义的启动脚本或网络配置
+          # cp custom_files/* rootfs/
+          # 重新打包为 Docker 需要的格式
+          tar -cf openwrt-docker-image.tar -C rootfs .
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        # 使用Buildx可以更好地处理多平台构建，即使本例主要针对ARM64
+
+      - name: Build Docker image
+        run: |
+          docker build --platform linux/arm64 -t ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-24.10.1-arm64:latest -t ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-24.10.1-arm64:${{ github.ref_name }} .
+          # 明确指定平台为 linux/arm64
+          # 如果希望包含日期标签，可以添加更多 -t 参数
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: ${{ env.REPOSITORY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-          buildargs: FIRMWARE
-          tags: "latest,${{ env.TAG }}"
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-24.10.1-arm64:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-24.10.1-arm64:${{ github.ref_name }}
